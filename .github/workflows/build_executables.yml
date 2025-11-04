@@ -136,7 +136,7 @@ jobs:
         echo "size=$size" >> $GITHUB_OUTPUT
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SMIC_Portfolio_Analysis-${{ runner.os }}
         path: ${{ steps.filename.outputs.path }}
