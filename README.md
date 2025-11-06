@@ -1,6 +1,6 @@
 # SMIC Portfolio Analysis
 
-Open source portfolio analysis and tracking software built by Joel Saucedo for the Student Managed Investment Committee (SMIC) at Georgia College & State University. This application provides comprehensive portfolio performance analysis, sector allocation tracking, and interactive visualizations for managing the university endowment fund with an initial investment of $100,000.
+Official portfolio analysis and tracking software for managing the university endowment fund of the Student Managed Investment Committee (SMIC) at Georgia College & State University. This application provides comprehensive portfolio performance analysis, sector allocation tracking, and interactive visualizations for the management of institutional investment assets.
 
 ## Project Overview
 
@@ -21,7 +21,7 @@ The SMIC Portfolio Analysis system simulates a portfolio that starts with 100% V
 
 The portfolio simulation follows a realistic drift model:
 
-1. **Initial State**: Portfolio starts with 100% allocation to 11 Vanguard sector ETFs, equal-weighted (9.09% each), representing the initial $100,000 university endowment investment
+1. **Initial State**: Portfolio starts with 100% allocation to 11 Vanguard sector ETFs, equal-weighted (9.09% each)
 2. **ETF-to-Stock Swaps**: When a stock is purchased:
    - The corresponding sector ETF is sold (dollar-neutral swap)
    - The stock is purchased with the same dollar amount
@@ -34,39 +34,38 @@ The portfolio simulation follows a realistic drift model:
 ### Performance Calculations
 
 **Portfolio Value**:
-```
-Portfolio_Value(t) = Σ(units_i(t) × price_i(t)) + Cash
-```
+
+$$V(t) = \sum_{i=1}^{n} u_i(t) \times p_i(t) + C$$
+
+where $u_i(t)$ represents the number of units (shares) of asset $i$ at time $t$, $p_i(t)$ is the price of asset $i$ at time $t$, and $C$ is the cash balance.
 
 **Cumulative Returns**:
-```
-Cumulative_Return(t) = (Portfolio_Value(t) / Portfolio_Value(0) - 1) × 100%
-```
+
+$$R_{cum}(t) = \left( \frac{V(t)}{V(0)} - 1 \right) \times 100\%$$
+
+where $V(0)$ is the initial portfolio value.
 
 **CAGR (Compound Annual Growth Rate)**:
-```
-CAGR = (Final_Value / Initial_Value)^(1/years) - 1
-```
+
+$$CAGR = \left( \frac{V_{final}}{V_{initial}} \right)^{\frac{1}{T}} - 1$$
+
+where $T$ is the time period in years.
 
 **Sector Weights**:
-```
-Sector_Weight_i(t) = (Sector_Value_i(t) / Total_Portfolio_Value(t)) × 100%
-```
 
-Where:
-- `Sector_Value_i(t)` = ETF value + sum of individual stock values in sector i
-- Weights are calculated daily and naturally drift based on relative performance
+$$w_i(t) = \frac{V_i(t)}{V_{total}(t)} \times 100\%$$
+
+where $V_i(t)$ represents the total value of sector $i$ at time $t$ (including both ETF and individual stock holdings within that sector), and $V_{total}(t)$ is the total portfolio value.
 
 ### Benchmark Comparison
 
-The S&P 500 (^GSPC) is used as the benchmark, normalized to the portfolio's initial value:
-```
-Benchmark_Value(t) = (S&P500_Price(t) / S&P500_Price(0)) × Initial_Portfolio_Value
-```
+The S&P 500 ($\text{^GSPC}$) is used as the benchmark, normalized to the portfolio's initial value:
+
+$$V_{benchmark}(t) = \frac{P_{S\&P500}(t)}{P_{S\&P500}(0)} \times V_{initial}$$
 
 This allows for direct dollar-for-dollar comparison while maintaining percentage return accuracy.
 
-## Project Achievements
+## Project Successes
 
 ### Technical Achievements
 
@@ -131,17 +130,17 @@ Download the latest executables from [GitHub Actions](https://github.com/joel-sa
 ```
 SMIC/
 ├── main_app.py              # GUI application (PySide6)
-├── analysis_core.py         # Core portfolio analysis engine
-├── smic.py                  # Standalone analysis script
-├── requirements.txt         # Python dependencies
+├── analysis_core.py     # Core portfolio analysis engine
+├── smic.py                # Standalone analysis script
+├── requirements.txt       # Python dependencies
 ├── SMIC_Portfolio_Analysis.spec  # PyInstaller configuration
 ├── data/
-│   ├── transactions.csv     # Portfolio transaction data
-│   └── *.csv                # Generated analysis reports
-├── figs/                    # Generated charts (from smic.py)
+│   ├── transactions.csv   # Portfolio transaction data
+│   └── *.csv              # Generated analysis reports
+├── figs/                  # Generated charts (from smic.py)
 ├── .github/
-│   └── workflows/           # CI/CD build workflows
-└── build_executable*.sh     # Platform-specific build scripts
+│   └── workflows/         # CI/CD build workflows
+└── build_executable*.sh   # Platform-specific build scripts
 ```
 
 ## Development
@@ -205,14 +204,38 @@ We welcome contributions! Please see our development guidelines and feel free to
 - **API Documentation**: Code is well-commented with docstrings explaining key functions
 - **Workflow Documentation**: GitHub Actions workflows are documented inline
 
+## Disclaimer
+
+**Conflict of Interest Disclosure**: The developer of this software, Joel Saucedo, serves as a Managing Director for the Student Managed Investment Committee (SMIC) at Georgia College & State University. This software is developed in that capacity for the purpose of managing the university endowment fund.
+
+**Not Financial Advice**: This software is provided for informational and analytical purposes only. The analysis, calculations, and visualizations generated by this software do not constitute financial advice, investment recommendations, or solicitation to buy or sell any securities. All investment decisions should be made in consultation with qualified financial advisors and in accordance with the investment policies and guidelines established by the university and the SMIC board.
+
+**No Warranty**: This software is provided "as is" without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. The developers and contributors shall not be liable for any damages arising from the use of this software.
+
 ## License
 
-This project is open source software developed for the Student Managed Investment Committee at Georgia College & State University. See LICENSE file for details.
+Copyright (c) 2025 Joel Saucedo. All rights reserved.
 
-## Author
+This software and associated documentation files (the "Software") are the proprietary property of Joel Saucedo. The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
 
-**Joel Saucedo**  
-Developer and maintainer of SMIC Portfolio Analysis
+**Rights Reserved**: Joel Saucedo retains all rights, title, and interest in and to the Software, including all intellectual property rights therein.
+
+**Restrictions**: 
+- The Software may not be copied, modified, distributed, or used for any purpose without the express written permission of Joel Saucedo.
+- Redistribution of the Software, in whole or in part, requires prior written consent from Joel Saucedo.
+- Any use of the Software for commercial purposes is strictly prohibited without explicit authorization.
+
+**Educational Use**: Limited use of the Software for educational purposes at Georgia College & State University is permitted under the supervision of the Student Managed Investment Committee, subject to the restrictions above.
+
+For licensing inquiries, permissions, or questions regarding the use of this software, please contact Joel Saucedo.
+
+## Contact
+
+**Developer**: Joel Saucedo  
+**Role**: Managing Director, Student Managed Investment Committee  
+**Institution**: Georgia College & State University
+
+For questions, issues, technical support, or licensing inquiries regarding this software, please contact Joel Saucedo.
 
 ## Acknowledgments
 
@@ -221,10 +244,6 @@ Developer and maintainer of SMIC Portfolio Analysis
 - **Plotly**: Interactive visualizations
 - **PySide6**: Cross-platform GUI framework
 - **Student Managed Investment Committee**: Georgia College & State University
-
-## Support
-
-For questions, issues, or contributions, please visit the [GitHub repository](https://github.com/joel-saucedo/SMIC-Portfolio-Analysis) or contact the development team.
 
 ---
 
