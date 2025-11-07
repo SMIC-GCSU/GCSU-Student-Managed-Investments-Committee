@@ -37,7 +37,12 @@ jobs:
     
     - name: Generate website
       run: |
+        # Ensure data directory exists
+        mkdir -p data
+        # Generate the website
         python generate_website.py
+        # Verify index.html was created
+        ls -lh docs/index.html
     
     - name: Setup Pages
       uses: actions/configure-pages@v3
