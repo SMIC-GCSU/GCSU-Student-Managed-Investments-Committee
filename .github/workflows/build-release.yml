@@ -72,11 +72,17 @@ jobs:
             Remove-Item -Recurse -Force $verifyPath
           }
           Expand-Archive -Path "dist\SMIC_Portfolio_Analysis_windows.zip" -DestinationPath $verifyPath -Force
-          if (Test-Path "$verifyPath\SMIC_Portfolio_Analysis.exe" -and Test-Path "$verifyPath\data\transactions.csv") {
+          $exeFound = Test-Path "$verifyPath\SMIC_Portfolio_Analysis.exe"
+          $dataFound = Test-Path "$verifyPath\data\transactions.csv"
+          Write-Host "Verification: EXE found=$exeFound, Data found=$dataFound"
+          if ($exeFound -and $dataFound) {
             Write-Host "✓ Verified: Zip contains executable and data file"
             Remove-Item -Recurse -Force $verifyPath
           } else {
-            Write-Host "ERROR: Zip verification failed!"
+            Write-Host "Listing zip contents for debugging:"
+            Get-ChildItem -Recurse -Path $verifyPath | Select-Object FullName
+            Write-Host "ERROR: Zip verification failed! Expected EXE and data/transactions.csv"
+            Remove-Item -Recurse -Force $verifyPath -ErrorAction SilentlyContinue
             exit 1
           }
       
