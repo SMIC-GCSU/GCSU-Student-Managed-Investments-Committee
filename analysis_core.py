@@ -134,10 +134,11 @@ def generate_comparison_plot(returns_data: Dict, sector: str = None, comparison_
             hovertemplate='%{y:.2f}%<extra></extra>'
         ))
         
-        # Mark entry points for this sector
+        # Mark entry points for this sector with ticker labels
         if sector in transaction_dates:
-            entry_dates = transaction_dates[sector]
-            for entry_date in entry_dates:
+            entry_date_tickers = transaction_dates[sector]
+            # entry_date_tickers is a dict: {date: [ticker1, ticker2, ...]}
+            for entry_date, tickers in entry_date_tickers.items():
                 # Find nearest date in returns index
                 if period == 'General':
                     date_series = portfolio_returns.index
@@ -151,14 +152,22 @@ def generate_comparison_plot(returns_data: Dict, sector: str = None, comparison_
                         entry_idx = date_series[date_idx]
                         if entry_idx in portfolio_returns.index:
                             entry_return = portfolio_returns.loc[entry_idx]
+                            # Create ticker label string
+                            ticker_label = ', '.join(tickers) if tickers else 'Entry'
+                            date_str = pd.Timestamp(entry_date).strftime("%Y-%m-%d")
+                            hover_text = f'Date: {date_str}<br>Ticker: {ticker_label}<br>Return: %{{y:.2f}}%'
+                            
                             fig.add_trace(go.Scatter(
                                 x=[entry_idx],
                                 y=[entry_return],
-                                mode='markers',
+                                mode='markers+text',
+                                text=ticker_label,
+                                textposition='top center',
+                                textfont=dict(size=9, color='#FF0000'),
                                 marker=dict(symbol='triangle-up', size=12, color='#FF0000', line=dict(width=2, color='white')),
-                                name=f'Entry: {pd.Timestamp(entry_date).strftime("%Y-%m-%d")}',
+                                name=f'Entry: {date_str}',
                                 showlegend=False,
-                                hovertemplate=f'Entry Date: {pd.Timestamp(entry_date).strftime("%Y-%m-%d")}<br>Return: %{{y:.2f}}%<extra></extra>'
+                                hovertemplate=hover_text + '<extra></extra>'
                             ))
                 except:
                     pass
@@ -202,27 +211,39 @@ def generate_comparison_plot(returns_data: Dict, sector: str = None, comparison_
             hovertemplate='%{y:.2f}%<extra></extra>'
         ))
         
-        # Mark all entry points across all sectors
-        all_entry_dates = []
-        for sec, dates in transaction_dates.items():
-            all_entry_dates.extend(dates)
-        all_entry_dates = sorted(set(all_entry_dates))
+        # Mark all entry points across all sectors with ticker labels
+        # Collect all transactions from all sectors
+        all_transactions = []  # List of (date, tickers) tuples
+        for sec, date_ticker_dict in transaction_dates.items():
+            for entry_date, tickers in date_ticker_dict.items():
+                all_transactions.append((entry_date, tickers))
         
-        for entry_date in all_entry_dates:
+        # Sort by date
+        all_transactions.sort(key=lambda x: x[0])
+        
+        for entry_date, tickers in all_transactions:
             try:
                 date_idx = portfolio_returns.index.get_indexer([pd.Timestamp(entry_date)], method='nearest')[0]
                 if date_idx >= 0 and date_idx < len(portfolio_returns.index):
                     entry_idx = portfolio_returns.index[date_idx]
                     if entry_idx in portfolio_returns.index:
                         entry_return = portfolio_returns.loc[entry_idx]
+                        # Create ticker label string
+                        ticker_label = ', '.join(tickers) if tickers else 'Entry'
+                        date_str = pd.Timestamp(entry_date).strftime("%Y-%m-%d")
+                        hover_text = f'Date: {date_str}<br>Ticker: {ticker_label}<br>Return: %{{y:.2f}}%'
+                        
                         fig.add_trace(go.Scatter(
                             x=[entry_idx],
                             y=[entry_return],
-                            mode='markers',
+                            mode='markers+text',
+                            text=ticker_label,
+                            textposition='top center',
+                            textfont=dict(size=9, color='#FF0000'),
                             marker=dict(symbol='triangle-up', size=12, color='#FF0000', line=dict(width=2, color='white')),
-                            name=f'Entry: {pd.Timestamp(entry_date).strftime("%Y-%m-%d")}',
+                            name=f'Entry: {date_str}',
                             showlegend=False,
-                            hovertemplate=f'Entry Date: {pd.Timestamp(entry_date).strftime("%Y-%m-%d")}<br>Return: %{{y:.2f}}%<extra></extra>'
+                            hovertemplate=hover_text + '<extra></extra>'
                         ))
             except:
                 pass
@@ -253,35 +274,12 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
     
     # Handle data path for both development and PyInstaller executable
     import sys
-    original_transactions_file = transactions_file
-    
     if getattr(sys, 'frozen', False):
         # Running as compiled executable
-        # Try multiple locations in order:
-        # 1. Relative to executable (when extracted from zip)
-        exe_dir = os.path.dirname(sys.executable)
-        possible_paths = [
-            os.path.join(exe_dir, transactions_file),  # Same dir as exe: data/transactions.csv
-            os.path.join(exe_dir, os.path.basename(transactions_file)),  # Same dir as exe: transactions.csv
-            os.path.join(sys._MEIPASS, transactions_file),  # PyInstaller bundle
-            os.path.join(sys._MEIPASS, os.path.basename(transactions_file)),  # PyInstaller bundle (no subdir)
-        ]
-        
-        # Also try parent directory of executable
-        if os.path.dirname(exe_dir):
-            parent_dir = os.path.dirname(exe_dir)
-            possible_paths.extend([
-                os.path.join(parent_dir, transactions_file),
-                os.path.join(parent_dir, 'data', os.path.basename(transactions_file)),
-            ])
-        
-        # Find the first path that exists
-        for path in possible_paths:
-            if os.path.exists(path) and os.path.isfile(path):
-                transactions_file = path
-                break
-        else:
-            # If not found, default to relative to executable
+        base_path = sys._MEIPASS
+        if not os.path.exists(os.path.join(base_path, transactions_file)):
+            # Try relative to executable location
+            exe_dir = os.path.dirname(sys.executable)
             transactions_file = os.path.join(exe_dir, transactions_file)
     else:
         # Running as script
@@ -292,19 +290,6 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
     
     # Load data
     try:
-        # Verify file exists and is readable before attempting to read
-        if not os.path.exists(transactions_file):
-            error_msg = f"Transaction data file not found at: {transactions_file}\n"
-            if getattr(sys, 'frozen', False):
-                error_msg += f"Executable location: {os.path.dirname(sys.executable)}\n"
-                error_msg += f"Looking for: {original_transactions_file}\n"
-                error_msg += "Please ensure the data directory and transactions.csv file are in the same directory as the executable."
-            raise FileNotFoundError(error_msg)
-        
-        if not os.path.isfile(transactions_file):
-            raise FileNotFoundError(f"Path exists but is not a file: {transactions_file}")
-        
-        # Try to read the file
         df = pd.read_csv(transactions_file, parse_dates=['invest_date'])
         if df.empty:
             raise ValueError("Transaction data file is empty")
@@ -312,14 +297,10 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
         missing_cols = [col for col in required_columns if col not in df.columns]
         if missing_cols:
             raise ValueError(f"Missing required columns: {missing_cols}")
-    except PermissionError as e:
-        raise PermissionError(f"Access denied reading transaction data file: {transactions_file}\n"
-                            f"Error: {str(e)}\n"
-                            f"Please ensure the file is not locked by another process and you have read permissions.")
     except FileNotFoundError:
-        raise  # Re-raise with our custom message
+        raise FileNotFoundError(f"Transaction data file not found: {transactions_file}")
     except Exception as e:
-        raise RuntimeError(f"Error loading transaction data from {transactions_file}: {str(e)}")
+        raise RuntimeError(f"Error loading transaction data: {str(e)}")
     
     # Determine start date
     start_date = df['invest_date'].min()
@@ -345,7 +326,8 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
     # Initialize units
     units = pd.DataFrame(0.0, index=px.index, columns=px.columns)
     
-    # Track transaction dates by sector (for stock entries only, not ETFs)
+    # Track transaction dates with ticker info by sector (for stock entries only, not ETFs)
+    # Structure: {sector: {date: [ticker1, ticker2, ...]}}
     transaction_dates_by_sector = {}
     
     # Process each position
@@ -398,10 +380,13 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
                 if etf in px.columns:
                     etf_price = px.loc[dt, etf]
                     
-                    # Track transaction date for this stock entry
+                    # Track transaction date and ticker for this stock entry
+                    invest_date = pd.Timestamp(row['invest_date']).normalize()
                     if sector_key not in transaction_dates_by_sector:
-                        transaction_dates_by_sector[sector_key] = []
-                    transaction_dates_by_sector[sector_key].append(row['invest_date'])
+                        transaction_dates_by_sector[sector_key] = {}
+                    if invest_date not in transaction_dates_by_sector[sector_key]:
+                        transaction_dates_by_sector[sector_key][invest_date] = []
+                    transaction_dates_by_sector[sector_key][invest_date].append(ticker)
                     
                     # Buy stock
                     if shares > 0:
@@ -706,12 +691,16 @@ def generate_portfolio_analysis(transactions_file: str = 'data/transactions.csv'
     else:
         benchmark_ytd_returns = pd.Series(0.0, index=benchmark_ytd_value.index)
     
-    # Clean up transaction dates (remove duplicates and sort)
+    # Clean up transaction dates with ticker info (structure preserved)
+    # Structure: {sector: {date: [ticker1, ticker2, ...]}}
     cleaned_transaction_dates = {}
-    for sector, dates in transaction_dates_by_sector.items():
-        # Convert to Timestamps, remove duplicates, and sort
-        unique_dates = sorted(set([pd.Timestamp(d) for d in dates]))
-        cleaned_transaction_dates[sector] = unique_dates
+    for sector, date_ticker_dict in transaction_dates_by_sector.items():
+        cleaned_transaction_dates[sector] = {}
+        for date, tickers in date_ticker_dict.items():
+            # Normalize date and ensure unique tickers
+            normalized_date = pd.Timestamp(date).normalize()
+            unique_tickers = list(set(tickers))  # Remove duplicate tickers for same date
+            cleaned_transaction_dates[sector][normalized_date] = unique_tickers
     
     # Store returns data for GUI (including transaction dates)
     returns_data = {
